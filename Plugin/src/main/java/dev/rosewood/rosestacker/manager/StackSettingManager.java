@@ -182,6 +182,7 @@ public class StackSettingManager extends Manager {
             pluginManager.addPermission(new Permission("rosestacker.nosilk.*", nosilk.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
 
             // Register spawnerplace permissions
+            spawnerplace.add(new Permission("rosestacker.spawnerplace.bypass"));
             spawnerplace.forEach(pluginManager::addPermission);
             pluginManager.addPermission(new Permission("rosestacker.spawnerplace.*", spawnerplace.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
 
