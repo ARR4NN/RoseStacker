@@ -15,7 +15,6 @@ import dev.rosewood.rosestacker.nms.NMSHandler;
 import dev.rosewood.rosestacker.nms.storage.StackedEntityDataEntry;
 import dev.rosewood.rosestacker.nms.storage.StackedEntityDataStorage;
 import dev.rosewood.rosestacker.stack.settings.EntityStackSettings;
-import dev.rosewood.rosestacker.stack.settings.entity.SlimeStackSettings;
 import dev.rosewood.rosestacker.utils.DataUtils;
 import dev.rosewood.rosestacker.utils.EntityUtils;
 import dev.rosewood.rosestacker.utils.ItemUtils;
@@ -109,12 +108,7 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
 
     public void increaseStackSize(LivingEntity entity, boolean updateDisplay) {
         Runnable task = () -> {
-            if (Setting.ENTITY_STACK_TO_BOTTOM.getBoolean()) {
-                this.stackedEntityDataStorage.addLast(entity);
-            } else {
-                this.stackedEntityDataStorage.addFirst(entity);
-            }
-
+            this.stackedEntityDataStorage.add(entity);
             if (updateDisplay)
                 this.updateDisplay();
         };
@@ -142,11 +136,7 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
     }
 
     public void increaseStackSize(StackedEntityDataStorage serializedStackedEntities) {
-        if (Setting.ENTITY_STACK_TO_BOTTOM.getBoolean()) {
-            this.stackedEntityDataStorage.addAllLast(serializedStackedEntities.getAll());
-        } else {
-            this.stackedEntityDataStorage.addAllFirst(serializedStackedEntities.getAll());
-        }
+        this.stackedEntityDataStorage.addAll(serializedStackedEntities.getAll());
         this.updateDisplay();
     }
 
@@ -237,7 +227,7 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
             int threshold = Setting.ENTITY_LOOT_APPROXIMATION_THRESHOLD.getInt();
             int approximationAmount = Setting.ENTITY_LOOT_APPROXIMATION_AMOUNT.getInt();
             if (Setting.ENTITY_LOOT_APPROXIMATION_ENABLED.getBoolean() && this.getStackSize() > threshold) {
-                this.stackedEntityDataStorage.forEachCapped(approximationAmount, internalEntities::add);
+                this.stackedEntityDataStorage.forEachCapped(approximationAmount - 1, internalEntities::add);
                 this.dropPartialStackLoot(internalEntities, this.getStackSize() / (double) approximationAmount, existingLoot, droppedExp);
             } else {
                 this.stackedEntityDataStorage.forEach(internalEntities::add);
@@ -273,7 +263,7 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
                     && (((EntityDamageByEntityEvent) thisEntity.getLastDamageCause()).getDamager().getType() == EntityType.WITHER
                     || ((EntityDamageByEntityEvent) thisEntity.getLastDamageCause()).getDamager().getType() == EntityType.WITHER_SKULL);
             boolean isSlime = thisEntity instanceof Slime;
-            boolean isAccurateSlime = isSlime && ((SlimeStackSettings) this.stackSettings).isAccurateDropsWithKillEntireStackOnDeath();
+            boolean isAccurateSlime = isSlime && this.stackSettings.getSettingValue(EntityStackSettings.SLIME_ACCURATE_DROPS_WITH_KILL_ENTIRE_STACK_ON_DEATH).getBoolean();
 
             Map<LivingEntity, EntityStackMultipleDeathEvent.EntityDrops> entityDrops = new LinkedHashMap<>(internalEntities.size());
             if (callEvents) {
@@ -326,7 +316,14 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
                             entityLootList.add(new ItemStack(Material.NETHER_STAR));
                         if (killedByWither)
                             entityLootList.add(new ItemStack(Material.WITHER_ROSE));
-                        entityDrops.put(entity, new EntityStackMultipleDeathEvent.EntityDrops(entityLootList, desiredExp));
+
+                        if (entityDrops.containsKey(entity)) {
+                            EntityStackMultipleDeathEvent.EntityDrops drops = entityDrops.get(entity);
+                            drops.setExperience(drops.getExperience() + desiredExp);
+                            drops.getDrops().addAll(entityLootList);
+                        } else {
+                            entityDrops.put(entity, new EntityStackMultipleDeathEvent.EntityDrops(entityLootList, desiredExp));
+                        }
                     }
                 }
 
@@ -348,9 +345,7 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
             // Multiply loot
             Collection<ItemStack> finalEntityLoot;
             if (multiplier != 1) {
-                finalEntityLoot = new ArrayList<>();
-                for (ItemStack itemStack : loot)
-                    finalEntityLoot.addAll(ItemUtils.getMultipliedItemStack(itemStack, multiplier));
+                finalEntityLoot = ItemUtils.getMultipliedItemStacks(loot, multiplier);
             } else {
                 finalEntityLoot = loot;
             }
@@ -474,7 +469,7 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
         if (this == stack2)
             return 0;
 
-        if (Setting.ENTITY_STACK_FLYING_DOWNWARDS.getBoolean() && this.stackSettings.getEntityTypeData().isFlyingMob())
+        if (Setting.ENTITY_STACK_FLYING_DOWNWARDS.getBoolean() && this.stackSettings.getEntityTypeData().flyingMob())
             return entity1.getLocation().getY() < entity2.getLocation().getY() ? 3 : -3;
 
         if (this.getStackSize() == stack2.getStackSize())
@@ -564,8 +559,6 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
         for (StackedEntityDataEntry<?> entry : removed)
             entities.add(NMSAdapter.getHandler().createEntityFromNBT(entry, this.entity.getLocation(), false, this.entity.getType()));
 
-        this.decreaseStackSize();
-
         int experience = event != null ? event.getDroppedExp() : EntityUtils.getApproximateExperience(this.stackSettings.getEntityType().getEntityClass());
         if (Setting.ENTITY_DROP_ACCURATE_ITEMS.getBoolean()) {
             if (this.entity instanceof Slime)
@@ -584,6 +577,8 @@ public class StackedEntity extends Stack<EntityStackSettings> implements Compara
                 event.setDroppedExp(experience * this.getStackSize());
             }
         }
+
+        this.decreaseStackSize();
 
         Player killer = this.entity.getKiller();
         if (killer != null && this.getStackSize() - 1 > 0)

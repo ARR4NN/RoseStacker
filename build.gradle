@@ -1,12 +1,13 @@
 plugins {
     id 'com.github.johnrengelman.shadow' version '7.1.0' apply false
+    id 'maven-publish'
 }
 
 allprojects {
     apply plugin: 'java-library'
     apply plugin: 'com.github.johnrengelman.shadow'
     group = 'dev.rosewood'
-    version = '1.5.1'
+    version = '1.5.3'
 
     java {
         toolchain.languageVersion.set(JavaLanguageVersion.of(17))
@@ -41,6 +42,10 @@ allprojects {
             }
         }
     }
+
+    dependencies {
+        compileOnly 'org.jetbrains:annotations:23.1.0'
+    }
 }
 
 dependencies {
@@ -48,9 +53,9 @@ dependencies {
     implementation project(':NMS:Wrapper')
     implementation project(':NMS:v1_16_R3')
     implementation project(path: ':NMS:v1_17_R1', configuration: 'remapped')
-    implementation project(path: ':NMS:v1_18_R1', configuration: 'remapped')
     implementation project(path: ':NMS:v1_18_R2', configuration: 'remapped')
     implementation project(path: ':NMS:v1_19_R1', configuration: 'remapped')
+    implementation project(path: ':NMS:v1_19_R2', configuration: 'remapped')
     implementation project(':Hook:Hook-Wrapper')
     implementation project(':Hook:mcMMO-New')
     implementation project(':Hook:mcMMO-Old')
@@ -63,6 +68,32 @@ shadowJar {
 
     relocate('dev.rosewood.rosegarden', 'dev.rosewood.rosestacker.lib.rosegarden')
     relocate('dev.rosewood.guiframework', 'dev.rosewood.rosestacker.lib.guiframework')
+}
+
+publishing {
+    publications {
+        shadow(MavenPublication) { publication ->
+            project.shadow.component(publication)
+            artifactId = 'rosestacker'
+            pom {
+                name = 'rosestacker'
+            }
+        }
+    }
+    repositories {
+        if (project.hasProperty('mavenUser') && project.hasProperty('mavenPassword')) {
+            maven {
+                credentials {
+                    username project.mavenUser
+                    password project.mavenPassword
+                }
+
+                def releasesRepoUrl = 'https://repo.rosewooddev.io/repository/public-releases/'
+                def snapshotsRepoUrl = 'https://repo.rosewooddev.io/repository/public-snapshots/'
+                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            }
+        }
+    }
 }
 
 build.dependsOn shadowJar

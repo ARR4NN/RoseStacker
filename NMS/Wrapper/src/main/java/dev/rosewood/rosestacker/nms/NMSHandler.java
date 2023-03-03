@@ -23,6 +23,18 @@ import org.bukkit.inventory.ItemStack;
  */
 public interface NMSHandler {
 
+    List<String> REMOVABLE_NBT_KEYS = List.of(
+            "UUID", "Pos", "Rotation", "WorldUUIDMost", "WorldUUIDLeast",
+            "Motion", "OnGround", "FallDistance", "Leash", "Spigot.ticksLived",
+            "Paper.OriginWorld", "Paper.Origin", "Patrolling", "PatrolTarget",
+            "RaidId", "Wave"
+    );
+
+    List<String> UNSAFE_NBT_KEYS = List.of(
+            "ArmorItems", "HandItems", "Items", "ChestedHorse", "Saddle",
+            "DecorItem", "Inventory", "carriedBlockState", "DeathTime", "Health"
+    );
+
     /**
      * Serializes a LivingEntity to a base64 string
      *
@@ -192,6 +204,14 @@ public interface NMSHandler {
     }
 
     /**
+     * Checks if an entity is an actively participating in a raid
+     *
+     * @param entity The entity to check
+     * @return true if the entity is an active raider, false otherwise
+     */
+    boolean isActiveRaider(LivingEntity entity);
+
+    /**
      * Creates a new StackedEntityDataStorage instance for storing large amounts of entities of the same type in a small data footprint
      *
      * @param livingEntity The base entity
@@ -228,6 +248,13 @@ public interface NMSHandler {
     Hologram createHologram(Location location, List<String> text);
 
     /**
+     * @return true if empty spawners are supported, false otherwise
+     */
+    default boolean supportsEmptySpawners() {
+        return false;
+    }
+
+    /**
      * 1.19 uses a new RandomSource system which causes a server crash when accessed async.
      * Try to hijack this RandomSource and inject our own into the world which allows "thread-safe" access.
      * This is likely a very bad idea, sorry to whoever is reading this.
@@ -235,6 +262,10 @@ public interface NMSHandler {
      * @param world The World to hijack the RandomSource of
      */
     default void hijackRandomSource(World world) {
+
+    }
+
+    default void setPaperFromMobSpawner(Entity entity) {
 
     }
 

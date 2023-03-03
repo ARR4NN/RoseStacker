@@ -57,7 +57,6 @@ public class ConfigurationManager extends AbstractConfigurationManager {
         ENTITY_LOOT_APPROXIMATION_ENABLED("global-entity-settings.loot-approximation-options.approximation-enabled", true, "Should loot be approximated to reduce lag for killing large stack sizes at once?"),
         ENTITY_LOOT_APPROXIMATION_THRESHOLD("global-entity-settings.loot-approximation-options.approximation-threshold", 2048, "The threshold at which loot drops will be approximated"),
         ENTITY_LOOT_APPROXIMATION_AMOUNT("global-entity-settings.loot-approximation-options.approximation-amount", 256, "The number of times the entity loot tables will be run"),
-        ENTITY_STACK_TO_BOTTOM("global-entity-settings.stack-to-bottom", false, "Should newly stacked entities be put on the bottom of the stack?"),
         ENTITY_REQUIRE_LINE_OF_SIGHT("global-entity-settings.require-line-of-sight", true, "Do entities need to be able to see each other to be able to stack?", "Setting this to true will prevent entities from stacking through walls"),
         ENTITY_TRANSFORM_ENTIRE_STACK("global-entity-settings.transform-entire-stack", true, "Should the entire stack of entities be transformed when the main entity is transformed?", "This applies to pigs getting struck by lightning, zombies drowning, etc"),
         ENTITY_ONLY_STACK_ON_GROUND("global-entity-settings.only-stack-on-ground", false, "Do entities have to be on the ground in order to stack?", "This does not apply if the mobs can fly or live in the water"),
@@ -65,8 +64,8 @@ public class ConfigurationManager extends AbstractConfigurationManager {
         ENTITY_DONT_STACK_IF_LEASHED("global-entity-settings.dont-stack-if-leashed", true, "Should we stack entities if they are leashed?", "You will still be able to leash stacks, it will just prevent them from stacking into other stacks", "This can cause some weird effects if disabled"),
         ENTITY_DONT_STACK_IF_INVULNERABLE("global-entity-settings.dont-stack-if-invulnerable", true, "Should we stack entities if they are invulnerable?"),
         ENTITY_DONT_STACK_CUSTOM_NAMED("global-entity-settings.dont-stack-custom-named", false, "Should we stack entities with custom names?"),
-        ENTITY_DONT_STACK_IF_HAS_EQUIPMENT("global-entity-settings.dont-stack-if-has-equipment", false, "Should we stack entities that have equipment?"),
-        ENTITY_DONT_STACK_IF_ACTIVE_RAIDER("global-entity-settings.dont-stack-if-active-raider", true, "Should we stack entities that are part of an active raid?", "This may cause issues when loading entities if disabled"),
+        ENTITY_DONT_STACK_IF_HAS_EQUIPMENT("global-entity-settings.dont-stack-if-has-equipment", false, "Should we stack entities that have equipment?", "This will ignore mobs that have standard equipment such as skeletons with unenchanted bows"),
+        ENTITY_DONT_STACK_IF_ACTIVE_RAIDER("global-entity-settings.dont-stack-if-active-raider", true, "Should we stack entities that are part of an active raid?"),
         ENTITY_STACK_FLYING_DOWNWARDS("global-entity-settings.stack-flying-downwards", false, "Should flying mobs always be stacked downwards?", "This is useful for mob grinders"),
         ENTITY_ONLY_STACK_FROM_SPAWNERS("global-entity-settings.only-stack-from-spawners", false, "Should we only stack entities spawned from spawners?"),
         ENTITY_TRIGGER_DEATH_EVENT_FOR_ENTIRE_STACK_KILL("global-entity-settings.trigger-death-event-for-entire-stack-kill", false, "Should an entity death event be triggered for each mob in a stack?", "If you use custom drops plugins, make sure to enable this", "Note to developers: The death events are asynchronous based on the below setting"),
@@ -214,7 +213,8 @@ public class ConfigurationManager extends AbstractConfigurationManager {
         MISC_CLEARLAG_CLEAR_ENTITIES("misc-settings.clearlag-clear-entities", false, "If Clearlag is installed, should we clear stacked entities?"),
         MISC_CLEARLAG_CLEAR_ITEMS("misc-settings.clearlag-clear-items", false, "If Clearlag is installed, should we clear stacked items?"),
         MISC_CLEARALL_REMOVE_SINGLE("misc-settings.clearall-remove-single", false, "Should single mobs be removed with `/rs clearall`?", "This will also affect the clearlag-clear-entities setting above"),
-        MISC_MYTHICMOBS_ALLOW_STACKING("misc-settings.mythicmobs-allow-stacking", false, "Should mobs owned by MythicMobs be allowed to stack?", "This is recommended to keep set to false unless you specifically only change mob attributes");
+        MISC_MYTHICMOBS_ALLOW_STACKING("misc-settings.mythicmobs-allow-stacking", false, "Should mobs owned by MythicMobs be allowed to stack?", "This is recommended to keep set to false unless you specifically only change mob attributes"),
+        MISC_SPAWNER_PERSISTENT_COMPATIBILITY("misc-settings.spawner-persistent-compatibility", true, "Some plugins like Jobs, mcMMO, and RoseLoot store special data for spawner mobs.", "Disabling this will cause the functionality within those plugins to break.");
 
         private final String key;
         private final Object defaultValue;

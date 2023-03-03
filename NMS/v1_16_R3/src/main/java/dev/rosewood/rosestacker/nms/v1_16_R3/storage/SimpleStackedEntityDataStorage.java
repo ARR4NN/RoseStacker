@@ -42,22 +42,12 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void addFirst(LivingEntity entity) {
+    public void add(LivingEntity entity) {
         this.size++;
     }
 
     @Override
-    public void addLast(LivingEntity entity) {
-        this.size++;
-    }
-
-    @Override
-    public void addAllFirst(List<StackedEntityDataEntry<?>> stackedEntityDataEntry) {
-        this.size += stackedEntityDataEntry.size();
-    }
-
-    @Override
-    public void addAllLast(List<StackedEntityDataEntry<?>> stackedEntityDataEntry) {
+    public void addAll(List<StackedEntityDataEntry<?>> stackedEntityDataEntry) {
         this.size += stackedEntityDataEntry.size();
     }
 
@@ -120,11 +110,6 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void forEach(Consumer<LivingEntity> consumer) {
-        this.forEachCapped(Integer.MAX_VALUE, consumer);
-    }
-
-    @Override
     public void forEachCapped(int count, Consumer<LivingEntity> consumer) {
         LivingEntity entity = this.entity.get();
         if (entity == null)
@@ -132,8 +117,9 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
 
         NMSHandler nmsHandler = NMSAdapter.getHandler();
         int amount = Math.min(count, this.size);
+        LivingEntity clone = nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType());
         for (int i = 0; i < amount; i++)
-            consumer.accept(nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType()));
+            consumer.accept(clone);
     }
 
     @Override
@@ -144,12 +130,12 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
 
         NMSHandler nmsHandler = NMSAdapter.getHandler();
         List<LivingEntity> removedEntries = new ArrayList<>(this.size);
-        for (int i = 0; i < this.size; i++) {
-            LivingEntity clone = nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType());
+        LivingEntity clone = nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType());
+        for (int i = 0; i < this.size; i++)
             if (function.apply(clone))
                 removedEntries.add(clone);
-        }
 
+        this.size -= removedEntries.size();
         return removedEntries;
     }
 
@@ -165,34 +151,10 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     private void stripUnneeded(NBTTagCompound compoundTag) {
-        compoundTag.remove("UUID");
-        compoundTag.remove("Pos");
-        compoundTag.remove("Rotation");
-        compoundTag.remove("WorldUUIDMost");
-        compoundTag.remove("WorldUUIDLeast");
-        compoundTag.remove("Motion");
-        compoundTag.remove("OnGround");
-        compoundTag.remove("FallDistance");
-        compoundTag.remove("Leash");
-        compoundTag.remove("Spigot.ticksLived");
-        compoundTag.remove("Paper.OriginWorld");
-        compoundTag.remove("Paper.Origin");
+        NMSHandler.REMOVABLE_NBT_KEYS.forEach(compoundTag::remove);
         NBTTagCompound bukkitValues = compoundTag.getCompound("BukkitValues");
         bukkitValues.remove("rosestacker:stacked_entity_data");
-
-        // Remove any items the entity could be holding
-        compoundTag.remove("ArmorItems");
-        compoundTag.remove("HandItems");
-        compoundTag.remove("Items");
-        compoundTag.remove("ChestedHorse");
-        compoundTag.remove("Saddle");
-        compoundTag.remove("DecorItem");
-        compoundTag.remove("Inventory");
-        compoundTag.remove("carriedBlockState");
-
-        // Remove anything else special for duplicating the entity
-        compoundTag.remove("DeathTime");
-        compoundTag.remove("Health");
+        NMSHandler.UNSAFE_NBT_KEYS.forEach(compoundTag::remove);
     }
 
 }

@@ -2,47 +2,24 @@ package dev.rosewood.rosestacker.stack.settings;
 
 import dev.rosewood.rosestacker.utils.ItemUtils;
 import java.util.List;
+import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Contains data loaded from entity_data.json
  */
-public class EntityTypeData {
-
-    private final boolean isSwimmingMob;
-    private final boolean isFlyingMob;
-    private final Material spawnEggMaterial;
-    private final List<String> defaultSpawnRequirements;
-    private final String skullTexture;
-    private final List<Material> breedingMaterials;
-    private final String spawnCategory;
-
-    public EntityTypeData(boolean isSwimmingMob, boolean isFlyingMob, Material spawnEggMaterial, List<String> defaultSpawnRequirements, String skullTexture, List<Material> breedingMaterials, String spawnCategory) {
-        this.isSwimmingMob = isSwimmingMob;
-        this.isFlyingMob = isFlyingMob;
-        this.spawnEggMaterial = spawnEggMaterial;
-        this.defaultSpawnRequirements = defaultSpawnRequirements;
-        this.skullTexture = skullTexture;
-        this.breedingMaterials = breedingMaterials;
-        this.spawnCategory = spawnCategory;
-    }
-
-    public boolean isSwimmingMob() {
-        return this.isSwimmingMob;
-    }
-
-    public boolean isFlyingMob() {
-        return this.isFlyingMob;
-    }
-
-    public Material getSpawnEggMaterial() {
-        return this.spawnEggMaterial;
-    }
-
-    public List<String> getDefaultSpawnRequirements() {
-        return this.defaultSpawnRequirements;
-    }
+public record EntityTypeData(
+        boolean swimmingMob,
+        boolean flyingMob,
+        Material spawnEggMaterial,
+        List<String> defaultSpawnRequirements,
+        String skullTexture,
+        Set<Material> breedingMaterials,
+        String spawnCategory,
+        Set<Material> standardEquipment
+) {
 
     public ItemStack getSkullItem() {
         return ItemUtils.getCustomSkull(this.skullTexture);
@@ -52,8 +29,12 @@ public class EntityTypeData {
         return this.breedingMaterials.contains(material);
     }
 
-    public String getSpawnCategory() {
-        return this.spawnCategory;
+    public boolean isStandardEquipment(ItemStack itemStack) {
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta == null)
+            return this.standardEquipment.contains(itemStack.getType());
+
+        return !meta.hasEnchants() && this.standardEquipment.contains(itemStack.getType());
     }
 
 }

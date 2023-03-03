@@ -2,13 +2,13 @@ package dev.rosewood.rosestacker.utils;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import dev.rosewood.rosestacker.RoseStacker;
 import dev.rosewood.rosestacker.nms.NMSAdapter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
@@ -179,7 +179,7 @@ public final class EntityUtils {
 
     public static Material getLazyBlockMaterial(Location location) {
         World world = location.getWorld();
-        if (world == null || location.getBlockY() < world.getMinHeight() || location.getBlockY() > world.getMaxHeight())
+        if (world == null || location.getBlockY() < world.getMinHeight() || location.getBlockY() >= world.getMaxHeight())
             return Material.AIR;
 
         try {
@@ -188,7 +188,8 @@ public final class EntityUtils {
                 Chunk chunk = location.getWorld().getChunkAt(location.getBlockX() >> 4, location.getBlockZ() >> 4);
                 return chunk.getChunkSnapshot();
             }).getBlockType(location.getBlockX() & 15, location.getBlockY(), location.getBlockZ() & 15);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
+            RoseStacker.getInstance().getLogger().warning("Failed to fetch block type at " + location);
             e.printStackTrace();
             return Material.AIR;
         }
@@ -207,8 +208,22 @@ public final class EntityUtils {
 
         BoundingBox boundingBox = cachedBoundingBoxes.get(entityType);
         if (boundingBox == null) {
-            boundingBox = NMSAdapter.getHandler().createNewEntityUnspawned(entityType, new Location(location.getWorld(), 0, 0, 0), CreatureSpawnEvent.SpawnReason.CUSTOM).getBoundingBox();
-            cachedBoundingBoxes.put(entityType, boundingBox);
+            if (entityType == EntityType.ENDER_DRAGON) {
+                boundingBox = new BoundingBox(-4, 0, -4, 4, 8, 4);
+            } else {
+                LivingEntity entity = null;
+                try {
+                    entity = NMSAdapter.getHandler().createNewEntityUnspawned(entityType, new Location(location.getWorld(), 0, 0, 0), CreatureSpawnEvent.SpawnReason.CUSTOM);
+                } catch (Exception ignored) { }
+
+                if (entity != null) {
+                    boundingBox = entity.getBoundingBox();
+                    cachedBoundingBoxes.put(entityType, boundingBox);
+                } else {
+                    // This should never happen unless the entity type is not a LivingEntity
+                    boundingBox = new BoundingBox();
+                }
+            }
         }
 
         boundingBox = boundingBox.clone();
